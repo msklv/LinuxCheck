@@ -58,10 +58,10 @@ OS='None'
 if [ -e "/etc/os-release" ]; then
   source /etc/os-release
   case ${ID} in
-  "debian" | "ubuntu" | "debian" | "astra")
+  "debian" | "ubuntu" | "devuan" | "astra")
     OS='Debian'
     ;;
-  "centos" | "rhel fedora" | "rhel" | "alt")
+  "centos" | "rhel fedora" | "rhel" | "alt" | "altlinux")
     OS='Centos'
     ;;
   *) ;;
