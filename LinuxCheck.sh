@@ -42,6 +42,8 @@ reverse_shell_check() {
   print_code "$(grep -P '(useradd|groupadd|chattr|fsockopen|socat|base64|socket|perl|openssl)' $1 $2 $3)"
 }
 
+print_msg "# LinuxCheck.sh v3 ru"
+
 ### 1. Проверка окружения ###
 print_msg "## Environment Check"
 # Проверка, запущен ли скрипт с правами root
@@ -61,7 +63,10 @@ if [ -e "/etc/os-release" ]; then
   "debian" | "ubuntu" | "devuan" | "astra")
     OS='Debian'
     ;;
-  "centos" | "rhel fedora" | "rhel" | "alt" | "altlinux")
+  "altlinux" | "alt")
+    OS='Alt'
+    ;;  
+  "centos" | "rhel fedora" | "rhel")
     OS='Centos'
     ;;
   *) ;;
@@ -81,11 +86,17 @@ if [ $OS = 'None' ]; then
   fi
 fi
 
-# Установка инструментов для экстренного реагирования на Centos и Debian
+
+# Выводим тип ОС
+print_msg "Detected OS: $OS"
+
+# Установка инструментов для анализа сети и отладки
+print_msg "Installing network analysis and debugging tools..."
 cmdline=(
   "net-tools"
   "telnet"
   "nc"
+  "netcat-tls"
   "lrzsz"
   "wget"
   "strace"
@@ -105,9 +116,18 @@ for prog in "${cmdline[@]}"; do
       yum install -y the_silver_searcher >/dev/null 2>&1
     fi
   elif [ $OS = 'Debian' ]; then
-    if dpkg -L $prog | grep 'does not contain any files' >/dev/null 2>&1; then
+    if  dpkg-query -W -f='${Status}\n' $prog | grep 'install ok installed' >/dev/null 2>&1; then
+     echo "$prog is install"
+    else
       echo -e "$prog is being installed......"
       apt install -y "$prog" >/dev/null 2>&1
+    fi
+  elif [ $OS = 'Alt' ]; then
+    if rpm -q "$prog" &>/dev/null 2>&1; then
+      echo "$prog is install"
+    else
+      echo -e "$prog is being installed......"
+      apt-get install -y $prog >/dev/null 2>&1
     fi
 
   fi
@@ -540,6 +560,8 @@ ssh_check() {
     print_code "$(grep -P -i -a 'authentication failure' /var/log/secure* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
   elif [ $OS = 'Debian' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/auth.* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
+  elif [ $OS = 'Alt' ]; then
+    print_code "$(journalctl -n 1000 | grep -P -i 'Failed password' | awk '{print $12}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"  # AltLinux 
   fi
 
   #SSHD

@@ -209,12 +209,8 @@ scp user@10.10.10.10:/home/user/app-alt10_root_1745921754_log.md .
 
 Этот инструмент был создан с учётом следующих инструментов/статей и личного опыта:
 
-Linenum
-https://github.com/lis912/Evaluation_tools  
-https://ixyzero.com/blog/archives/4.html  
-https://github.com/T0xst/linux   
-https://github.com/grayddq/GScan  
-
-## Что можно улучшить?
-
-- Добавить установку необходимых пакетов на Alt Linux
+- Linenum
+- https://github.com/lis912/Evaluation_tools  
+- https://ixyzero.com/blog/archives/4.html  
+- https://github.com/T0xst/linux
+- https://github.com/grayddq/GScan  
