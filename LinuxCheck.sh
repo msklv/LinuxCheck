@@ -238,36 +238,36 @@ network_check() {
     print_msg "$line" | awk -F ':' '{print "  "$1"  " $2}' | awk '{print $1"   "$2 "    "$3"   "$10"  "$11}'
   done
 
-  #端口监听
+  # Мониторинг портов
   print_msg "### Port Listening"
   print_code "$(netstat -tulpen | grep -P 'tcp|udp.*')"
 
-  #对外开放端口
+  # Внешне открытые порты
   print_msg "### External Open Ports"
   print_code "$(netstat -tulpen | awk '{print $1,$4}' | grep -P -o '.*0.0.0.0:(\d+)|:::\d+')"
 
-  #网络连接
+  # Сетевые подключения
   print_msg "### Network Connections"
   print_msg "**TCP Connections**"
   print_code "$(netstat -antop | grep -P ESTAB)"
   print_msg "**UDP Connections**"
   print_code "$(netstat -anp | grep -P udp)"
 
-  #连接状态
+  # Состояния TCP соединений
   print_msg "### TCP Connection States"
   print_code "$(netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}')"
 
-  #路由表
-  print_msg "### 路由表"
+  # Таблица маршрутов
+  print_msg "### Route Table"
   print_code "$(/sbin/route -nee)"
 
-  #路由转发
-  print_msg "### 路由转发"
+  # Маршрутизация включена
+  print_msg "### IP Forwarding"
   ip_forward=$(more /proc/sys/net/ipv4/ip_forward | awk -F: '{if ($1==1) print "1"}')
   if [ -n "$ip_forward" ]; then
-    print_code "/proc/sys/net/ipv4/ip_forward 已开启路由转发！"
+    print_code "/proc/sys/net/ipv4/ip_forward is enabled!"
   else
-    print_code "该服务器未开启路由转发！"
+    print_code "IP forwarding is not enabled on this server!"
   fi
 
   #DNS
@@ -278,43 +278,43 @@ network_check() {
   print_msg "### ARP"
   print_code "$(arp -n -a)"
 
-  #混杂模式
-  print_msg "### 网卡混杂模式"
+  # Промискуитетный режим
+  print_msg "### Promiscuous Mode"
   if ip link | grep -P PROMISC >/dev/null 2>&1; then
-    print_code "网卡存在混杂模式！"
+    print_code "Promiscuous mode detected!"
   else
-    print_code "网卡不存在混杂模式！"
+    print_code "No promiscuous mode detected!"
 
   fi
 
-  #防火墙
-  print_msg "### IPTABLES防火墙"
+  # Брандмауэр
+  print_msg "### IPTABLES Firewall"
   print_code "$(iptables -L)"
 
 }
 
 crontab_check() {
-  print_msg "## 任务计划检查"
+  print_msg "## Crontab Check"
 
   #crontab
-  print_msg "### Crontab 文件"
+  print_msg "### Crontab Files"
   print_msg "crontab -l"
   print_code "$(crontab -u root -l | egrep -v '#')"
   print_msg "ls -alht /etc/cron.*/*"
   print_code "$(ls -alht /etc/cron.*/*)"
 
-  # crontab 内容
-  print_msg "### Crontab 文件内容"
+  # crontab Содержимое
+  print_msg "### Crontab File Contents"
   print_code "$(find /var/spool/cron/ -type f -print0 | xargs -0 sudo cat | egrep -v '#')"
 
-  #crontab可疑命令
+  # Подозрительные команды в crontab
   print_msg "### Crontab Backdoor"
   reverse_shell_check /etc/cron*
   reverse_shell_check /var/spool/cron/*
 }
 
 env_check() {
-  print_msg "## 环境变量检查"
+  print_msg "## Environment Variables Check"
   #env
   print_msg "### env"
   print_code "$(env)"
@@ -323,7 +323,7 @@ env_check() {
   print_msg "### PATH"
   print_code "$PATH"
 
-  print_msg "### Linux 动态链接库变量"
+  print_msg "### Linux Dynamic Linker Variables"
 
   #LD_PRELOAD
   if [[ -n $LD_PRELOAD ]]; then
@@ -356,56 +356,56 @@ env_check() {
     print_msg "**ld.so.preload**"
     print_code ${preload}
   fi
-  # 正在运行的环境变量
-  print_msg "### 正在运行的进程环境变量问题"
+  # Переменные окружения запущенных процессов
+  print_msg "### Running Process Environment Variables"
   print_code "$(grep -P 'LD_PRELOAD|LD_ELF_PRELOAD|LD_AOUT_PRELOAD|PROMPT_COMMAND|LD_LIBRARY_PATH' /proc/*/environ)"
 }
 
 user_check() {
-  print_msg "## 用户信息检查"
+  print_msg "## User Information Check"
 
-  print_msg "### 可登陆用户"
+  print_msg "### Loginable Users"
   print_code "$(cat /etc/passwd | egrep -v 'nologin$|false$')"
 
-  print_msg "### Root权限（非root）账号"
+  print_msg "### Root Privilege (Non-root) Accounts"
   print_code "$(cat /etc/passwd | awk -F ':' '$3==0' | egrep -v root:)"
 
-  print_msg "### /etc/passwd文件修改日期: "
+  print_msg "### /etc/passwd File Modification Date: "
 
   print_code "$(stat /etc/passwd | grep -P -o '(?<=Modify: ).*')"
 
-  print_msg "### sudoers(请注意NOPASSWD)"
+  print_msg "### sudoers (Pay attention to NOPASSWD)"
   print_code "$(cat /etc/sudoers | egrep -v '#' | sed -e '/^$/d' | grep -P ALL)"
 
-  print_msg "### 登录信息 w"
+  print_msg "### Login Information w"
   print_code "$(w)"
-  print_msg "### 登录信息 last"
+  print_msg "### Login Information last"
   print_code "$(last)"
-  print_msg "### 登录信息 lastlog"
+  print_msg "### Login Information lastlog"
   print_code "$(lastlog)"
 
-  print_msg "### 登陆ip"
+  print_msg "### Login IPs"
   print_code "$(grep -i -a Accepted /var/log/secure /var/log/auth.* 2>/dev/null | grep -Po '\d+\.\d+\.\d+\.\d+' | sort | uniq)"
 
 }
 
 init_check() {
-  print_msg "## Linux启动项排查"
+  print_msg "## Linux Startup Items Check"
 
-  print_msg "### /etc/init.d 记录"
+  print_msg "### /etc/init.d Records"
   print_code "$(ls -alhtR /etc/init.d | head -n 30)"
-  print_msg "### /etc/init.d 黑特征"
+  print_msg "### /etc/init.d Black Characteristics"
   reverse_shell_check /etc/init.d/*
 }
 
 service_check() {
 
-  print_msg "## 服务状态检查"
+  print_msg "## Service Status Check"
 
-  print_msg "### 正在运行的Service "
+  print_msg "### Running Services "
   print_code "$(systemctl -l | grep running | awk '{print $1}')"
 
-  print_msg "### 最近添加的Service "
+  print_msg "### Recently Added Services "
   print_code "$(ls -alhtR /etc/systemd/system/multi-user.target.wants)"
   print_code "$(ls -alht /etc/systemd/system/*.service | egrep -v 'dbus-org')"
 
@@ -413,12 +413,12 @@ service_check() {
 
 bash_check() {
 
-  print_msg -e "## Bash配置检查"
-  #查看history文件
-  print_msg "### History文件"
+  print_msg -e "## Bash Configuration Check"
+  #Просмотр файла history
+  print_msg "### History Files"
   print_code "$(ls -alht /root/.*_history)"
 
-  print_msg "### History敏感操作"
+  print_msg "### Sensitive Operations in History"
   print_code "$(cat ~/.*history | grep -P '(?<![0-9])(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))(?![0-9])|http://|https://|\bssh\b|\bscp\b|\.tar|\bwget\b|\bcurl\b|\bnc\b|\btelnet\b|\bbash\b|\bsh\b|\bchmod\b|\bchown\b|/etc/passwd|/etc/shadow|/etc/hosts|\bnmap\b|\bfrp\b|\bnfs\b|\bsshd\b|\bmodprobe\b|\blsmod\b|\bsudo\b|mysql\b|mysqldump' | egrep -v 'man\b|ag\b|cat\b|sed\b|git\b|docker\b|rm\b|touch\b|mv\b|\bapt\b|\bapt-get\b')"
 
   #/etc/profile
@@ -450,8 +450,8 @@ bash_check() {
 }
 
 file_check() {
-  print_msg "## 文件检查"
-  print_msg "系统文件修改时间 "
+  print_msg "## File Check"
+  print_msg "System File Modification Time "
   cmdline=(
     "/sbin/ifconfig"
     "/bin/ls"
@@ -468,17 +468,17 @@ file_check() {
     "/root/.ssh/authorized_keys"
   )
   for soft in "${cmdline[@]}"; do
-    print_msg "文件：$soft\t\t\t修改日期：$(stat $soft | grep -P -o '(?<=Modify: )[\d-\s:]+')"
+    print_msg "File: $soft\t\t\tModification Date: $(stat $soft | grep -P -o '(?<=Modify: )[\d-\s:]+')"
   done
 
-  print_msg "### ...隐藏文件"
+  print_msg "### Hidden Files"
   print_msg "$(find / ! -path "/proc/*" ! -path "/sys/*" ! -path "/run/*" ! -path "/boot/*" -name ".*.")"
 
-  #tmp目录
+  #tmp каталог
   print_msg "### /tmp"
   print_code "$(ls /tmp /var/tmp /dev/shm -alht)"
 
-  #alias 别名
+  #alias
   print_msg "### alias"
   print_code "$(alias | egrep -v 'git')"
 
@@ -486,56 +486,56 @@ file_check() {
   print_msg "### SUID"
   print_code "$(find / ! -path "/proc/*" -perm -004000 -type f | egrep -v 'snap|docker|pam_timestamp_check|unix_chkpwd|ping|mount|su|pt_chown|ssh-keysign|at|passwd|chsh|crontab|chfn|usernetctl|staprun|newgrp|chage|dhcp|helper|pkexec|top|Xorg|nvidia-modprobe|quota|login|security_authtrampoline|authopen|traceroute6|traceroute|ps')"
 
-  #lsof -L1 进程存在但文件已经没有了
+  #lsof -L1, процесс существует, но файл был удален
   print_msg "### lsof +L1"
   print_code "$(lsof +L1)"
 
-  #近7天改动
-  print_msg "### 近七天文件改动 mtime "
+  # Изменения за последние 7 дней (mtime)
+  print_msg "### Last Seven Days File Changes (mtime) "
   print_code "$(find /etc /bin /lib /sbin /dev /root/ /home /tmp /var /usr ! -path "/var/log*" ! -path "/var/spool/exim4*" ! -path "/var/backups*" -mtime -7 -type f | egrep -v '\.log|cache|vim|/share/|/lib/|.zsh|.gem|\.git|LICENSE|README|/_\w+\.\w+|\blogs\b|elasticsearch|nohup|i18n' | xargs -i{} ls -alh {})"
 
-  #近7天改动
-  print_msg "### 近七天文件改动 ctime "
+  # Изменения за последние 7 дней (ctime)
+  print_msg "### Last Seven Days File Changes (ctime) "
   print_code "$(find /etc /bin /lib /sbin /dev /root/ /home /tmp /var /usr ! -path "/var/log*" ! -path "/var/spool/exim4*" ! -path "/var/backups*" -ctime -7 -type f | egrep -v '\.log|cache|vim|/share/|/lib/|.zsh|.gem|\.git|LICENSE|README|/_\w+\.\w+|\blogs\b|elasticsearch|nohup|i18n' | xargs -i{} ls -alh {})"
 
-  #大文件200mb
-  #有些黑客会将数据库、网站打包成一个文件然后下载
-  print_msg "### 大文件>200mb "
+  # Большие файлы >200MB
+  # Некоторые хакеры могут упаковать базу данных или сайт в один файл и скачать его
+  print_msg "### Large Files >200MB "
   print_code "$(find / ! -path "/proc/*" ! -path "/sys/*" ! -path "/run/*" ! -path "/boot/*" -size +200M -exec ls -alht {} + 2>/dev/null | grep -P '\.gif|\.jpeg|\.jpg|\.png|\.zip|\.tar.gz|\.tgz|\.7z|\.log|\.xz|\.rar|\.bak|\.old|\.sql|\.1|\.txt|\.tar|\.db|/\w+$' | egrep -v 'ib_logfile|ibd|mysql-bin|mysql-slow|ibdata1|overlay2')"
 
-  #敏感文件
-  print_msg "### 敏感文件 "
+  # Чувствительные файлы
+  print_msg "### Sensitive Files "
   print_code "$(find / ! -path "/lib/modules*" ! -path "/usr/src*" ! -path "/snap*" ! -path "/usr/include/*" -regextype posix-extended -regex '.*sqlmap|.*msfconsole|.*\bncat|.*\bnmap|.*nikto|.*ettercap|.*tunnel\.(php|jsp|asp|py)|.*/nc\b|.*socks.(php|jsp|asp|py)|.*proxy.(php|jsp|asp|py)|.*brook.*|.*frps|.*frpc|.*aircrack|.*hydra|.*miner|.*/ew$' -type f | egrep -v '/lib/python' | xargs -i{} ls -alh {})"
 
-  print_msg "### 可疑黑客文件 "
+  print_msg "### Suspicious Hacker Files "
   print_code "$(find /root /home /opt /tmp /var/ /dev -regextype posix-extended -regex '.*wget|.*curl|.*openssl|.*mysql' -type f 2>/dev/null | xargs -i{} ls -alh {} | egrep -v '/pkgs/|/envs/|overlay2')"
 
 }
 
 rootkit_check() {
-  print_msg "## Rootkit检查"
-  #lsmod 可疑模块
-  print_msg "### lsmod 可疑模块"
+  print_msg "## Rootkit Check"
+  #lsmod Подозрительные модули
+  print_msg "### lsmod Suspicious Modules"
   print_code "$(lsmod | egrep -v 'ablk_helper|ac97_bus|acpi_power_meter|aesni_intel|ahci|ata_generic|ata_piix|auth_rpcgss|binfmt_misc|bluetooth|bnep|bnx2|bridge|cdrom|cirrus|coretemp|crc_t10dif|crc32_pclmul|crc32c_intel|crct10dif_common|crct10dif_generic|crct10dif_pclmul|cryptd|dca|dcdbas|dm_log|dm_mirror|dm_mod|dm_region_hash|drm|drm_kms_helper|drm_panel_orientation_quirks|e1000|ebtable_broute|ebtable_filter|ebtable_nat|ebtables|edac_core|ext4|fb_sys_fops|floppy|fuse|gf128mul|ghash_clmulni_intel|glue_helper|grace|i2c_algo_bit|i2c_core|i2c_piix4|i7core_edac|intel_powerclamp|ioatdma|ip_set|ip_tables|ip6_tables|ip6t_REJECT|ip6t_rpfilter|ip6table_filter|ip6table_mangle|ip6table_nat|ip6ta ble_raw|ip6table_security|ipmi_devintf|ipmi_msghandler|ipmi_si|ipmi_ssif|ipt_MASQUERADE|ipt_REJECT|iptable_filter|iptable_mangle|iptable_nat|iptable_raw|iptable_security|iTCO_vendor_support|iTCO_wdt|jbd2|joydev|kvm|kvm_intel|libahci|libata|libcrc32c|llc|lockd|lpc_ich|lrw|mbcache|megaraid_sas|mfd_core|mgag200|Module|mptbase|mptscsih|mptspi|nf_conntrack|nf_conntrack_ipv4|nf_conntrack_ipv6|nf_defrag_ipv4|nf_defrag_ipv6|nf_nat|nf_nat_ipv4|nf_nat_ipv6|nf_nat_masquerade_ipv4|nfnetlink|nfnetlink_log|nfnetlink_queue|nfs_acl|nfsd|parport|parport_pc|pata_acpi|pcspkr|ppdev|rfkill|sch_fq_codel|scsi_transport_spi|sd_mod|serio_raw|sg|shpchp|snd|snd_ac97_codec|snd_ens1371|snd_page_alloc|snd_pcm|snd_rawmidi|snd_seq|snd_seq_device|snd_seq_midi|snd_seq_midi_event|snd_timer|soundcore|sr_mod|stp|sunrpc|syscopyarea|sysfillrect|sysimgblt|tcp_lp|ttm|tun|uvcvideo|videobuf2_core|videobuf2_memops|videobuf2_vmalloc|videodev|virtio|virtio_balloon|virtio_console|virtio_net|virtio_pci|virtio_ring|virtio_scsi|vmhgfs|vmw_balloon|vmw_vmci|vmw_vsock_vmci_transport|vmware_balloon|vmwgfx|vsock|xfs|xt_CHECKSUM|xt_conntrack|xt_state|raid*|tcpbbr|btrfs|.*diag|psmouse|ufs|linear|msdos|cpuid|veth|xt_tcpudp|xfrm_user|xfrm_algo|xt_addrtype|br_netfilter|input_leds|sch_fq|ib_iser|rdma_cm|iw_cm|ib_cm|ib_core|.*scsi.*|tcp_bbr|pcbc|autofs4|multipath|hfs.*|minix|ntfs|vfat|jfs|usbcore|usb_common|ehci_hcd|uhci_hcd|ecb|crc32c_generic|button|hid|usbhid|evdev|hid_generic|overlay|xt_nat|qnx4|sb_edac|acpi_cpufreq|ixgbe|pf_ring|tcp_htcp|cfg80211|x86_pkg_temp_thermal|mei_me|mei|processor|thermal_sys|lp|enclosure|ses|ehci_pci|igb|i2c_i801|pps_core|isofs|nls_utf8|xt_REDIRECT|xt_multiport|iosf_mbi|qxl|cdc_ether|usbnet|ip6table_raw|skx_edac|intel_rapl|wmi|acpi_pad|ast|i40e|ptp|nfit|libnvdimm|bpfilter|failover|toa|tls|nft_|qemu_fw_cfg')"
 
-  print_msg "### Rootkit 内核模块"
+  print_msg "### Rootkit Kernel Modules"
   kernel=$(grep -E 'hide_tcp4_port|hidden_files|hide_tcp6_port|diamorphine|module_hide|module_hidden|is_invisible|hacked_getdents|hacked_kill|heroin|kernel_unlink|hide_module|find_sys_call_tbl|h4x_delete_module|h4x_getdents64|h4x_kill|h4x_tcp4_seq_show|new_getdents|old_getdents|should_hide_file_name|should_hide_task_name' </proc/kallsyms)
   if [ -n "$kernel" ]; then
-    print_msg "存在内核敏感函数！疑似Rootkit内核模块"
+    print_msg "Kernel sensitive functions detected! Suspected Rootkit kernel module"
     print_msg "$kernel"
   else
-    print_msg "未找到内核敏感函数"
+    print_msg "No kernel sensitive functions found"
   fi
 
-  print_msg "### 可疑的.ko模块"
+  print_msg "### Suspicious .ko Modules"
   print_code "$(find / ! -path '/var/lib/docker/overlay2/*' ! -path '/proc/*' ! -path '/usr/lib/modules/*' ! -path '/lib/modules/*' ! -path '/boot/*' -regextype posix-extended -regex '.*\.ko' | egrep -v 'tutor.ko')"
 
 }
 
 ssh_check() {
-  print_msg "## SSH检查"
-  #SSH爆破IP
-  print_msg "### SSH爆破"
+  print_msg "## SSH Check"
+  #IP-адреса, осуществляющие brute-force SSH
+  print_msg "### SSH Brute-force IPs"
   if [ $OS = 'Centos' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/secure* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
   else
@@ -547,21 +547,21 @@ ssh_check() {
   print_msg "/usr/sbin/sshd"
   print_code "$(stat /usr/sbin/sshd | grep -P 'Access|Modify|Change')"
 
-  #ssh后门配置检查
-  print_msg "### SSH 后门配置"
+  # Проверка конфигурации SSH на бэкдор
+  print_msg "### SSH Backdoor Configuration"
   if [ -e "$HOME/.ssh/config" ]; then
     print_msg "$(grep LocalCommand <~/.ssh/config)"
     print_msg "$(grep ProxyCommand <~/.ssh/config)"
   else
-    print_msg "未发现ssh配置文件"
+    print_msg "No ssh configuration file found"
   fi
 
-  #PAM后门检查
-  print_msg "### PAM 后门检测 "
+  # Проверка PAM на бэкдор
+  print_msg "### PAM Backdoor Detection "
   ls -la /usr/lib/security 2>/dev/null
   ls -la /usr/lib64/security 2>/dev/null
 
-  print_msg "### SSH inetd后门检查 "
+  print_msg "### SSH inetd Backdoor Detection "
   if [ -e "/etc/inetd.conf" ]; then
     grep -E '(bash -i)' </etc/inetd.conf
   fi
@@ -577,22 +577,22 @@ ssh_check() {
     fi
   done
 
-  # 检查/root目录的authorized_keys文件
+  # Проверка файла authorized_keys в каталоге /root
   print_msg "### authorized_keys"
   root_sshkey="/root/.ssh/authorized_keys"
 
   if [ -s "${root_sshkey}" ]; then
     print_code "$(cat ${root_sshkey})"
   else
-    print_code "User: root - SSH key文件不存在"
+    print_code "User: root - SSH key file does not exist"
   fi
 }
 
 webshell_check() {
 
-  print_msg "## Webshell检查"
+  print_msg "## Webshell Check"
 
-  print_msg "### PHP webshell查杀"
+  print_msg "### PHP Webshell Detection"
   print_code "$(grep -P -i -r -l 'array_map\(|pcntl_exec\(|proc_open\(|popen\(|assert\(|phpspy|c99sh|milw0rm|eval?\(|\(gunerpress|\(base64_decoolcode|spider_bc|shell_exec\(|passthru\(|base64_decode\s?\(|gzuncompress\s?\(|gzinflate|\(\$\$\w+|call_user_func\(|call_user_func_array\(|preg_replace_callback\(|preg_replace\(|register_shutdown_function\(|register_tick_function\(|mb_ereg_replace_callback\(|filter_var\(|ob_start\(|usort\(|uksort\(|uasort\(|GzinFlate\s?\(|\$\w+\(\d+\)\.\$\w+\(\d+\)\.|\$\w+=str_replace\(|eval\/\*.*\*\/\(' $webpath --include='*.php*' --include='*.phtml')"
   print_code "$(grep -P -i -r -l '^(\xff\xd8|\x89\x50|GIF89a|GIF87a|BM|\x00\x00\x01\x00\x01)[\s\S]*<\?\s*php' $webpath --include='*.php*' --include='*.phtml')"
   print_code "$(grep -P -i -r -l '\b(assert|eval|system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec)\b[\/*\s]*\(+[\/*\s]*((\$_(GET|POST|REQUEST|COOKIE)\[.{0,25})|(base64_decode|gzinflate|gzuncompress|gzdecode|str_rot13)[\s\(]*(\$_(GET|POST|REQUEST|COOKIE)\[.{0,25}))' $webpath --include='*.php*' --include='*.phtml')"
@@ -603,37 +603,37 @@ webshell_check() {
   print_code "$(grep -P -i -r -l 'phpinfo|move_uploaded_file|system|shell_exec|passthru|popen|proc_open|pcntl_exec|call_user_func|ob_start' $webpath --include='*.php*' --include='*.phtml')"
   print_code "$(grep -P -i -r -l 'array_map|uasort|uksort|array_diff_uassoc|array_diff_ukey|array_intersect_uassoc|array_intersect_ukey|array_reduce|array_filter|array_udiff|array_udiff_assoc|array_udiff_uassoc|array_uintersect|array_uintersect_assoc|array_uintersect_uassoc|array_walk|array_walk_recursive|register_shutdown_function|register_tick_function|filter_var_array|yaml_parse|sqlite_create_function|fgetc|fgets|fgetss|fpassthru|fread|file_get_contents|readfile|stream_get_contents|stream_get_line|highlight_file|show_source|file_put_contents|pfsockopen|fsockopen' $webpath --include='*.php*' --include='*.phtml')"
 
-  #JSP webshell查杀
-  print_msg "### JSP webshell查杀"
+  #JSP Webshell Detection
+  print_msg "### JSP Webshell Detection"
   print_code "$(grep -P -i -r -l '<%@\spage\simport=[\s\S]*\\u00\d+\\u00\d+|<%@\spage\simport=[\s\S]*Runtime.getRuntime\(\).exec\(request.getParameter\(|Runtime.getRuntime\(\)' $webpath --include='*.jsp*' --include='*.jhtml')"
 
 }
 
 poison_check() {
 
-  print_msg "## 供应链投毒检测"
+  print_msg "## Supply Chain Poisoning Detection"
 
-  print_msg "### Python2 pip 检测"
+  print_msg "### Python2 pip Detection"
   print_code "$(pip freeze | grep -P 'istrib|djanga|easyinstall|junkeldat|libpeshka|mumpy|mybiubiubiu|nmap-python|openvc|python-ftp|pythonkafka|python-mongo|python-mysql|python-mysqldb|python-openssl|python-sqlite|virtualnv|mateplotlib|request=|aioconsol')"
 
-  print_msg "### Python3 pip 检测"
+  print_msg "### Python3 pip Detection"
   print_code "$(pip3 freeze | grep -P 'istrib|djanga|easyinstall|junkeldat|libpeshka|mumpy|mybiubiubiu|nmap-python|openvc|python-ftp|pythonkafka|python-mongo|python-mysql|python-mysqldb|python-openssl|python-sqlite|virtualnv|mateplotlib|request=|aioconsol')"
 
 }
 
 miner_check() {
 
-  print_msg "## 挖矿木马检查"
+  print_msg "## Mining Trojan Detection"
 
-  print_msg "### 常规挖矿进程检测"
+  print_msg "### Common Mining Process Detection"
   print_code "$(ps aux | grep -P "systemctI|kworkerds|init10.cfg|wl.conf|crond64|watchbog|sustse|donate|proxkekman|test.conf|/var/tmp/apple|/var/tmp/big|/var/tmp/small|/var/tmp/cat|/var/tmp/dog|/var/tmp/mysql|/var/tmp/sishen|ubyx|cpu.c|tes.conf|psping|/var/tmp/java-c|pscf|cryptonight|sustes|xmrig|xmr-stak|suppoie|ririg|/var/tmp/ntpd|/var/tmp/ntp|/var/tmp/qq|/tmp/qq|/var/tmp/aa|gg1.conf|hh1.conf|apaqi|dajiba|/var/tmp/look|/var/tmp/nginx|dd1.conf|kkk1.conf|ttt1.conf|ooo1.conf|ppp1.conf|lll1.conf|yyy1.conf|1111.conf|2221.conf|dk1.conf|kd1.conf|mao1.conf|YB1.conf|2Ri1.conf|3Gu1.conf|crant|nicehash|linuxs|linuxl|Linux|crawler.weibo|stratum|gpg-daemon|jobs.flu.cc|cranberry|start.sh|watch.sh|krun.sh|killTop.sh|cpuminer|/60009|ssh_deny.sh|clean.sh|\./over|mrx1|redisscan|ebscan|barad_agent|\.sr0|clay|udevs|\.sshd|/tmp/init|xmr|xig|ddgs|minerd|hashvault|geqn|\.kthreadd|httpdz|pastebin.com|sobot.com|kerbero|2t3ik|ddgs|qW3xt|ztctb|i2pd" | egrep -v 'grep')"
   print_code "$(find / ! -path "/proc/*" ! -path "/sys/*" ! -path "/run/*" ! -path "/boot/*" -regextype posix-extended -regex '.*systemctI|.*kworkerds|.*init10.cfg|.*wl.conf|.*crond64|.*watchbog|.*sustse|.*donate|.*proxkekman|.*cryptonight|.*sustes|.*xmrig|.*xmr-stak|.*suppoie|.*ririg|gg1.conf|.*cpuminer|.*xmr|.*xig|.*ddgs|.*minerd|.*hashvault|\.kthreadd|.*httpdz|.*kerbero|.*2t3ik|.*qW3xt|.*ztctb|.*miner.sh' -type f)"
 
-  print_msg "### Ntpclient 挖矿木马检测"
+  print_msg "### Ntpclient Mining Trojan Detection"
   print_code "$(find / ! -path "/proc/*" ! -path "/sys/*" ! -path "/boot/*" -regextype posix-extended -regex 'ntpclient|Mozz')"
   print_code "$(ls -alh /tmp/.a /var/tmp/.a /run/shm/a /dev/.a /dev/shm/.a 2>/dev/null)"
 
-  print_msg "### WorkMiner 挖矿木马检测"
+  print_msg "### WorkMiner Mining Trojan Detection"
   print_code "$(ps aux | grep -P "work32|work64|/tmp/secure.sh|/tmp/auth.sh" | egrep -v 'grep')"
   print_code "$(ls -alh /tmp/xmr /tmp/config.json /tmp/secure.sh /tmp/auth.sh /usr/.work/work64 2>/dev/null)"
 
@@ -641,51 +641,51 @@ miner_check() {
 
 risk_check() {
 
-  print_msg "## 服务器风险/漏洞检查"
+  print_msg "## Server Risk/Vulnerability Check"
 
-  print_msg "### Redis弱密码检测"
+  print_msg "### Redis Weak Password Detection"
   print_code "$(cat /etc/redis/redis.conf 2>/dev/null | grep -P '(?<=requirepass )(test|123456|admin|root|12345678|111111|p@ssw0rd|test|qwerty|zxcvbnm|123123|12344321|123qwe|password|1qaz|000000|666666|888888)')"
 
-  print_msg "### JDWP调试检测"
+  print_msg "### JDWP Debugging Detection"
   if ps aux | grep -P '(?:runjdwp|agentlib:jdwp)' | egrep -v 'grep' >/dev/null 2>&1; then
-    print_code "存在JDWP调试高风险进程\n $(ps aux | grep -P '(?:runjdwp|agentlib:jdwp)' | egrep -v 'grep') "
+    print_code "JDWP debugging high-risk process detected\n $(ps aux | grep -P '(?:runjdwp|agentlib:jdwp)' | egrep -v 'grep') "
   fi
 
-  print_msg "### Python http.server 列目录检测"
+  print_msg "### Python http.server Directory Listing Detection"
   print_code "$(ps aux | grep -P http.server | egrep -v 'grep')"
 }
 
 docker_check() {
 
-  print_msg "## Docker信息检测"
+  print_msg "## Docker Information Check"
 
-  print_msg "### Docker运行的镜像"
+  print_msg "### Running Docker Images"
   print_code "$(docker ps)"
 
-  print_msg "### 检测CAP_SYS_ADMIN权限"
+  print_msg "### CAP_SYS_ADMIN Privilege Detection"
   if command -v capsh >/dev/null 2>&1; then
     cap_sys_adminNum=$(capsh --print | grep cap_sys_admin | wc -l)
     if [ $cap_sys_adminNum -gt 0 ]; then
-      print_code "存在CAP_SYS_ADMIN权限！"
+      print_code "CAP_SYS_ADMIN privilege detected!"
     fi
   else
-    print_code "未发现capsh命令！"
+    print_code "capsh command not found!"
   fi
 
-  print_msg "### 检测CAP_DAC_READ_SEARCH权限"
+  print_msg "### CAP_DAC_READ_SEARCH Privilege Detection"
   if command -v capsh >/dev/null 2>&1; then
     cap_dac_read_searchNum=$(capsh --print | grep cap_dac_read_search | wc -l)
     if [ $cap_dac_read_searchNum -gt 0 ]; then
-      print_code "存在CAP_DAC_READ_SEARCH！"
+      print_code "CAP_DAC_READ_SEARCH privilege detected!"
     fi
   else
-    print_code "未发现capsh命令！"
+    print_code "capsh command not found!"
   fi
 }
 
 upload_report() {
 
-  # 上传到指定接口
+  # Загрузка на указанный интерфейс
   if [[ -n $webhook_url ]]; then
     curl -X POST -F "file=@$filename" "$webhook_url"
   fi
