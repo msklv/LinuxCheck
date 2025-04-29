@@ -145,6 +145,7 @@ git clone https://github.com/al0ne/LinuxCheck.git
 chmod u+x LinuxCheck.sh
 ./LinuxCheck.sh  
 ```
+
 Второй способ: запуск напрямую онлайн (в этом случае возможность загрузки отчёта недоступна)
 
 ```bash

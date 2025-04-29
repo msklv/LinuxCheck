@@ -58,7 +58,7 @@ OS='None'
 if [ -e "/etc/os-release" ]; then
   source /etc/os-release
   case ${ID} in
-  "debian" | "ubuntu" | "devuan" | "astra")
+  "debian" | "ubuntu" | "debian" | "astra")
     OS='Debian'
     ;;
   "centos" | "rhel fedora" | "rhel" | "alt")
@@ -538,7 +538,7 @@ ssh_check() {
   print_msg "### SSH Brute-force IPs"
   if [ $OS = 'Centos' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/secure* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
-  else
+  elif [ $OS = 'Debian' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/auth.* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
   fi
 
