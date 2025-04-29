@@ -8,7 +8,8 @@
 
 - Поддержка Astra Linux и Alt Linux
 - Русские комментарии
-- Код и результаты - на английском, для больших шансов на понимание  
+- Код и результаты - на английском, для больших шансов на понимание
+- Повышенный уровень безопасности действий скрипта
 
 ## Обновления
 
@@ -153,47 +154,7 @@ chmod u+x LinuxCheck.sh
 bash -c "$(curl -sSL https://raw.githubusercontent.com/msklv/LinuxCheck/master/LinuxCheck.sh)"  
 ```
 
-Файл будет сохранён в формате ipaddr_hostname_username_timestamp.log.
-
-### Автоматическая загрузка отчётов
-
-Если необходимо массово запускать скрипт на нескольких машинах, после выполнения он автоматически отправит отчёт на указанный URL. Для этого измените переменную `webhook_url` в скрипте на ваш собственный адрес.
-
-```shell
-# Адрес для отправки отчётов
-webhook_url='http://localhost:5000/upload'
-upload_report() {
-
-# Загрузка на указанный интерфейс
-  if [[ -n $webhook_url ]]; then
-    curl -X POST -F "file=@$filename" "$webhook_url"
-  fi
-
-}
-```
-
-На вашем сервере можно запустить сервис Flask, который будет принимать отчёты в формате Markdown, отправленные с других серверов.
-
-```python
-from flask import Flask, request
-
-app = Flask(__name__)
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return "No file part", 400
-    file = request.files['file']
-    if file.filename == '':
-        return "No selected file", 400
-    if file:
-        filename = file.filename
-        file.save(filename)
-        return "File successfully uploaded", 200
-
-if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=9999)
-```
+Файл будет сохранён в формате ipaddr_hostname_username_timestamp_log.md
 
 ## Копирование на удаленный хост и обратно
 
@@ -214,3 +175,8 @@ scp user@10.10.10.10:/home/user/app-alt10_root_1745921754_log.md .
 - https://ixyzero.com/blog/archives/4.html  
 - https://github.com/T0xst/linux
 - https://github.com/grayddq/GScan  
+
+## Неплохо бы сделать
+
+- лучше использовать iproute2 (ip, ss) за место net-tools (ifconfig, netstat) и других устаревших инструментов.
+- лучше ограничить области сканирования самыми уязвимыми местами.

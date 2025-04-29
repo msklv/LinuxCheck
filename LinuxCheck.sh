@@ -21,8 +21,8 @@ echo -e "\n"
 # Установка пути WEB. Укажите каталог веб-приложения для проверки на наличие Webshell.
 webpath='/'
 
-# Адрес для отправки отчета
-webhook_url='http://localhost:5000/upload'
+# Адрес для отправки отчета, только с Шифрованием!
+#webhook_url='https://localhost:5000/upload'
 
 # Установка пути для сохранения файла
 ipaddress=$(ip address | grep -oP '(?<=inet )\d+\.\d+\.\d+\.\d+(?=\/2)' | head -n 1)
@@ -94,17 +94,11 @@ print_msg "Detected OS: $OS"
 print_msg "Installing network analysis and debugging tools..."
 cmdline=(
   "net-tools"
-  "telnet"
-  "nc"
-  "netcat-tls"
-  "lrzsz"
   "wget"
-  "strace"
   "traceroute"
   "htop"
   "tar"
   "lsof"
-  "tcpdump"
 )
 for prog in "${cmdline[@]}"; do
 
@@ -705,14 +699,14 @@ docker_check() {
   fi
 }
 
-upload_report() {
+#upload_report() {
 
   # Загрузка на указанный интерфейс
-  if [[ -n $webhook_url ]]; then
-    curl -X POST -F "file=@$filename" "$webhook_url"
-  fi
+#  if [[ -n $webhook_url ]]; then
+#    curl -X POST -F "file=@$filename" "$webhook_url"
+#  fi
 
-}
+#}
 
 # Проверка базовой информации о сервере
 base_check
@@ -749,4 +743,4 @@ risk_check
 # Проверка Docker
 docker_check
 # Загрузка отчета
-upload_report
+#upload_report
