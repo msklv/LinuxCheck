@@ -2,25 +2,29 @@
 
 echo ""
 echo " ========================================================= "
-echo " \        Linux应急处置/信息搜集/漏洞检测脚本 V3.0      / "
+echo " \    Linux Emergency Response/Information Collection     / "
+echo " \        Vulnerability Detection Script V3.0             / "
 echo " ========================================================= "
-echo " # 支持Centos、Debian系统检测                    "
-echo " # author：al0ne                    "
-echo " # https://github.com/al0ne                    "
-echo " # 更新日期：2024年4月20日                    "
-echo " # 参考来源：                "
-echo " #   1.Gscan https://github.com/grayddq/GScan  "
-echo " #   2.Lynis https://github.com/CISOfy/lynis  "
-echo " #   3.container-escape-check https://github.com/teamssix/container-escape-check"
+echo " # Supports CentOS and Debian system detection            "
+echo " # author: al0ne                                          "
+echo " # https://github.com/al0ne                               "
+echo " # Original updated on: April 20, 2024                    "
+echo " # Adopted on: April 29, 2025                            "
+echo " # Supports Alt Linux and Astra Linux detection           "
+echo " # References:                                            "
+echo " #   1. Gscan https://github.com/grayddq/GScan            "
+echo " #   2. Lynis https://github.com/CISOfy/lynis            "
+echo " #   3. container-escape-check                            "
+echo " #      https://github.com/teamssix/container-escape-check"
 echo -e "\n"
 
-# WEB Path 设置web目录，检测Webshell。
+# Установка пути WEB. Укажите каталог веб-приложения для проверки на наличие Webshell.
 webpath='/'
 
-# 报告上报的地址
+# Адрес для отправки отчета
 webhook_url='http://localhost:5000/upload'
 
-# 设置保存文件
+# Установка пути для сохранения файла
 ipaddress=$(ip address | grep -oP '(?<=inet )\d+\.\d+\.\d+\.\d+(?=\/2)' | head -n 1)
 filename=$ipaddress'_'$(hostname)'_'$(whoami)'_'$(date +%s)_log'.md'
 
@@ -38,26 +42,26 @@ reverse_shell_check() {
   print_code "$(grep -P '(useradd|groupadd|chattr|fsockopen|socat|base64|socket|perl|openssl)' $1 $2 $3)"
 }
 
-### 1.环境检查 ###
-print_msg "## 环境检测"
-# 验证是否为root权限
+### 1. Проверка окружения ###
+print_msg "## Environment Check"
+# Проверка, запущен ли скрипт с правами root
 if [ $UID -ne 0 ]; then
-  print_msg "请使用root权限运行！"
+  print_msg "Please run with root privileges!"
   exit 1
 else
-  print_msg "当前为root权限！"
+  print_msg "Currently running with root privileges!"
 fi
 
-# 验证操作系统是debian系还是centos
+# Проверка операционной системы: Debian или CentOS
 OS='None'
 
 if [ -e "/etc/os-release" ]; then
   source /etc/os-release
   case ${ID} in
-  "debian" | "ubuntu" | "devuan")
+  "debian" | "ubuntu" | "devuan" | "astra")
     OS='Debian'
     ;;
-  "centos" | "rhel fedora" | "rhel")
+  "centos" | "rhel fedora" | "rhel" | "alt")
     OS='Centos'
     ;;
   *) ;;
@@ -70,13 +74,14 @@ if [ $OS = 'None' ]; then
   elif command -v yum >/dev/null 2>&1; then
     OS='Centos'
   else
-    echo -e "\n不支持这个系统\n"
-    echo -e "已退出"
-    exit 1
+    echo -e "\nThis system is not fully supported by this script!"
+    OS='BaseLinux'
+    # echo -e "Exiting"
+    # exit 1
   fi
 fi
 
-# 安装应急必备工具
+# Установка инструментов для экстренного реагирования на Centos и Debian
 cmdline=(
   "net-tools"
   "telnet"
@@ -94,14 +99,14 @@ for prog in "${cmdline[@]}"; do
 
   if [ $OS = 'Centos' ]; then
     soft=$(rpm -q "$prog")
-    if echo "$soft" | grep -E '没有安装|未安装|not installed' >/dev/null 2>&1; then
-      echo -e "$prog 安装中......"
+    if echo "$soft" | grep -E 'not installed|not found' >/dev/null 2>&1; then
+      echo -e "$prog is being installed......"
       yum install -y "$prog" >/dev/null 2>&1
       yum install -y the_silver_searcher >/dev/null 2>&1
     fi
-  else
+  elif [ $OS = 'Debian' ]; then
     if dpkg -L $prog | grep 'does not contain any files' >/dev/null 2>&1; then
-      echo -e "$prog 安装中......"
+      echo -e "$prog is being installed......"
       apt install -y "$prog" >/dev/null 2>&1
     fi
 
@@ -111,47 +116,47 @@ done
 echo -e "\n"
 
 base_check() {
-  print_msg "## 基础配置检查"
-  print_msg "### 系统信息"
-  #当前用户
+  print_msg "## Basic Configuration Check"
+  print_msg "### System Information"
+  # Текущий пользователь
   print_msg "**USER:**\t\t$(whoami)" 2>/dev/null
-  #版本信息
+  # Версия системы
   print_msg "**OS Version:**\t$(uname -r)"
-  #主机名
+  # Имя хоста
   print_msg "**Hostname:** \t$(hostname -s)"
-  #服务器SN
-  print_msg "**服务器SN:** \t$(dmidecode -t1 | grep -oP '(?<=Serial Number: ).*')"
+  # Серийный номер сервера
+  print_msg "**Server SN:** \t$(dmidecode -t1 | grep -oP '(?<=Serial Number: ).*')"
   #uptime
   print_msg "**Uptime:** \t$(uptime | awk -F ',' '{print $1}')"
-  #系统负载
-  print_msg "**系统负载:** \t$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')"
-  #cpu信息
+  # Системная нагрузка
+  print_msg "**System Load:** \t$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')"
+  # Информация о CPU
   print_msg "**CPU info:**\t$(grep -oP '(?<=model name\t: ).*' </proc/cpuinfo | head -n 1)"
-  #cpu核心
-  print_msg "**CPU 核心:**\t$(cat /proc/cpuinfo | grep 'processor' | sort | uniq | wc -l)"
+  # Количество ядер процессора
+  print_msg "**CPU Cores:**\t$(cat /proc/cpuinfo | grep 'processor' | sort | uniq | wc -l)"
   #ipaddress
   ipaddress=$(ifconfig | grep -oP '(?<=inet |inet addr:)\d+\.\d+\.\d+\.\d+' | grep -v '127.0.0.1') >/dev/null 2>&1
   print_msg "**IPADDR:**\t\t${ipaddress}" | sed ":a;N;s/\n/ /g;ta"
-  print_msg "**CPU使用率:**  "
+  print_msg "**CPU Usage:**  "
   awk '$0 ~/cpu[0-9]/' /proc/stat 2>/dev/null | while read line; do
     print_msg "$(echo $line | awk '{total=$2+$3+$4+$5+$6+$7+$8;free=$5;\
         print$1" Free "free/total*100"%",\
         "Used " (total-free)/total*100"%"}')"
   done
 
-  #内存占用
-  print_msg "### 内存占用"
+  # Использование памяти
+  print_msg "### Memory Usage"
   print_code "$(free -mh)"
 
-  #剩余空间
-  print_msg "### 剩余空间"
+  # Оставшееся пространство
+  print_msg "### Remaining Disk Space"
   print_code "$(df -mh)"
 
-  print_msg "### 硬盘挂载"
+  print_msg "### Disk Mounts"
   print_code "$(grep -v '#' </etc/fstab | awk '{print $1,$2,$3}')"
 
-  #安装软件
-  # print_msg "### 常用软件"
+  # Установленное программное обеспечение
+  print_msg "### Installed Software"
   cmdline=(
     "which perl"
     "which gcc"
@@ -191,65 +196,65 @@ base_check() {
 }
 
 process_check() {
-  print_msg "## 进程信息检查"
+  print_msg "## Process Information Check"
 
-  print_msg "### CPU占用TOP 15"
+  print_msg "### CPU Usage TOP 15"
   cpu=$(ps aux | grep -v ^'USER' | sort -rn -k3 | head -15) 2>/dev/null
   print_code "${cpu}"
 
-  print_msg "### 内存占用TOP 15"
+  print_msg "### Memory Usage TOP 15"
   mem=$(ps aux | grep -v ^'USER' | sort -rn -k4 | head -15) 2>/dev/null
   print_code "${mem}"
 
-  print_msg "### 父进程为1的进程信息"
+  print_msg "### Processes with Parent Process ID 1"
   print_code "$(ps -e -o user,pid,ppid,cmd | awk '$3 == 1' | egrep -v "containerd-shim|/lib/systemd/systemd|/usr/sbin/cron|dbus|rsyslogd|containerd|/usr/sbin/sshd|/usr/bin/dockerd|/usr/sbin/arpd|/bin/login|/usr/sbin/vnstatd")"
 
-  print_msg "### bash反弹shell进程"
+  print_msg "### Bash reverse shell processes"
   tcp_reverse=$(ps -ef | grep -P 'sh -i' | egrep -v 'grep' | awk '{print $2}' | xargs -i{} lsof -p {} | grep 'ESTAB')
   if [ -n $tcp_reverse ]; then
     print_code "$tcp_reverse"
   else
-    print_code "未发现 bash -i 反弹shell！"
+    print_code "No bash -i reverse shell detected!"
   fi
-  print_msg "### SSH 软连接后门进程"
+  print_msg "### SSH symbolic link backdoor processes"
   if ps -ef | grep -P '\s+\-oport=\d+' >/dev/null 2>&1; then
     print_msg "$(ps -ef | grep -P '\s+\-oport=\d+')"
   else
-    print_msg "未检测到SSH软连接后门"
+    print_msg "No SSH symbolic link backdoor detected"
 
   fi
 }
 
 network_check() {
-  print_msg "## 网络/流量检查"
+  print_msg "## Network/Traffic Check"
   #ifconfig
   print_msg '### ifconfig'
   print_code "$(/sbin/ifconfig -a)"
 
-  #网络流量
-  print_msg "### 网络流量"
+  # Сетевой трафик
+  print_msg "### Network Traffic"
   print_msg "**Interface**    **ByteRec**   **PackRec**   **ByteTran**   **PackTran**"
   awk ' NR>2' /proc/net/dev | while read line; do
     print_msg "$line" | awk -F ':' '{print "  "$1"  " $2}' | awk '{print $1"   "$2 "    "$3"   "$10"  "$11}'
   done
 
   #端口监听
-  print_msg "### 端口监听"
+  print_msg "### Port Listening"
   print_code "$(netstat -tulpen | grep -P 'tcp|udp.*')"
 
   #对外开放端口
-  print_msg "### 对外开放端口"
+  print_msg "### External Open Ports"
   print_code "$(netstat -tulpen | awk '{print $1,$4}' | grep -P -o '.*0.0.0.0:(\d+)|:::\d+')"
 
   #网络连接
-  print_msg "### 网络连接"
-  print_msg "**TCP连接**"
+  print_msg "### Network Connections"
+  print_msg "**TCP Connections**"
   print_code "$(netstat -antop | grep -P ESTAB)"
-  print_msg "**UDP连接**"
+  print_msg "**UDP Connections**"
   print_code "$(netstat -anp | grep -P udp)"
 
   #连接状态
-  print_msg "### TCP连接状态"
+  print_msg "### TCP Connection States"
   print_code "$(netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}')"
 
   #路由表
@@ -687,39 +692,39 @@ upload_report() {
 
 }
 
-# 服务器基础信息排查
+# Проверка базовой информации о сервере
 base_check
-# 进程信息排查（CPU/内存占用，后门进程排查）
+# Проверка информации о процессах (использование CPU/памяти, проверка на наличие бэкдоров)
 process_check
-# 网络排查
+# Проверка сети
 network_check
-# 任务计划排查
+# Проверка планировщика задач
 crontab_check
-# 环境变量排查
+# Проверка переменных окружения
 env_check
-# 用户文件排查
+# Проверка файлов пользователей
 user_check
-# 启动项排查
+# Проверка автозагрузки
 init_check
-# 服务排查
+# Проверка служб
 service_check
-# bash 排查
+# Проверка bash
 bash_check
-# 黑客/后门文件排查
+# Проверка файлов на наличие хакерских/бэкдор файлов
 file_check
-# rootkit 排查
+# Проверка rootkit
 rootkit_check
-# ssh 排查
+# Проверка SSH
 ssh_check
-# webshell 排查
+# Проверка webshell
 webshell_check
-# 供应链排查
+# Проверка цепочки поставок
 poison_check
-# 挖矿排查
+# Проверка на наличие майнинговых программ
 miner_check
-# 服务器风险检测
+# Проверка рисков сервера
 risk_check
-# Docker 检测
+# Проверка Docker
 docker_check
-# upload_report
+# Загрузка отчета
 upload_report
