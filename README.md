@@ -170,6 +170,7 @@ scp user@10.10.10.10:/home/user/app-alt10_root_1745921754_log.md .
 
 Этот инструмент был создан с учётом следующих инструментов/статей и личного опыта:
 
+- Оригинальный проект LinuxCheck - https://github.com/al0ne/LinuxCheck
 - Linenum
 - https://github.com/lis912/Evaluation_tools  
 - https://ixyzero.com/blog/archives/4.html  
