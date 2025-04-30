@@ -9,7 +9,7 @@ echo " # Supports CentOS and Debian system detection            "
 echo " # author: al0ne                                          "
 echo " # https://github.com/al0ne                               "
 echo " # Original updated on: April 20, 2024                    "
-echo " # Adopted on: April 29, 2025                            "
+echo " # Adopted on: April 30, 2025 dy msklv                    "
 echo " # Supports Alt Linux and Astra Linux detection           "
 echo " # References:                                            "
 echo " #   1. Gscan https://github.com/grayddq/GScan            "
@@ -93,11 +93,7 @@ print_msg "Detected OS: $OS"
 # Установка инструментов для анализа сети и отладки
 print_msg "Installing network analysis and debugging tools..."
 cmdline=(
-  "net-tools"
-  "wget"
-  "traceroute"
-  "htop"
-  "tar"
+  "net-tools"   # Лучше заменить на iproute2
   "lsof"
 )
 for prog in "${cmdline[@]}"; do
@@ -172,37 +168,115 @@ base_check() {
   # Установленное программное обеспечение
   print_msg "### Installed Software"
   cmdline=(
-    "which perl"
-    "which gcc"
-    "which g++"
-    "which python"
-    "which php"
-    "which cc"
-    "which go"
-    "which node"
-    "which nodejs"
-    "which bind"
-    "which tomcat"
-    "which clang"
-    "which ruby"
-    "which curl"
-    "which wget"
-    "which mysql"
-    "which redis"
-    "which ssserver"
-    "which vsftpd"
-    "which java"
-    "which apache"
-    "which apache2"
-    "which nginx"
-    "which git"
-    "which mongodb"
-    "which docker"
-    "which tftp"
-    "which psql"
-    "which kafka"
-
+    # Языки программирования
+    "which perl"          # Perl
+    "which gcc"           # GCC
+    "which g++"           # G++
+    "which python"        # Python
+    "which python3"       # Python 3
+    "which php"           # PHP
+    "which cc"            # C компилятор
+    "which go"            # Go  
+    "which node"          # Node.js
+    "which nodejs"        # Node.js
+    "which npm"           # Node.js пакетный менеджер
+    "which yarn"          # Node.js пакетный менеджер
+    "which rustc"         # Rust компилятор
+    "which cargo"         # Rust пакетный менеджер
+    "which dotnet"        # .NET CLI, включая C# компилятор
+    "which kotlin"        # Kotlin CLI
+    "which swift"         # Swift компилятор
+    "which scala"         # Scala компилятор
+    "which java"          # Java компилятор
+    "which tomcat"        # Tomcat среда выполнения Java
+    "which clang"         # Clang компилятор
+    "which ruby"          # Ruby интерпретатор
+    "which powershell"    # old powershell
+    "which pwsh"          # new powershell
+    # Инструменты разработки
+    "which git"           # Git
+    "which code-server"   # VSCode Сервер
+    "which vim"           # Vim
+    "which ip"            # ip
+    "which ansible"       # Ansible
+    "which ansible-playbook" # Ansible Playbook
+    "which terraform"     # Terraform
+    # Серверы
+    "which bind"          # BIND DNS
+    "which apache"        # Apache
+    "which apache2"       # Apache 
+    "which nginx"         # Nginx
+    "which httpd"         # Apache
+    "which docker"        # Docker
+    "which docker-compose"  # Docker Compose
+    "which tftp"          # TFTP
+    "which vsftpd"        # VSFTPD
+    "which haproxy"       # HAProxy
+    "which envoy"         # Envoy HTTP Proxy
+    "which traefik"       # Traefik HTTP Proxy
+    "which caddy"         # Caddy HTTP Proxy
+    "which varnishd"      # Varnish HTTP Proxy
+    "which nomad"         # Nomad
+    "which fail2ban"      # Fail2Ban
+    "which ufw"           # UFW
+    "which ssserver"      # Shadowsocks VPN
+    "which openvpn"       # OpenVPN
+    # БД и кластеры
+    "which mysql"         # MySQL
+    "which psql"          # PostgreSQL
+    "which redis-cli"     # Redis
+    "which redis"         # Redis
+    "which mongodb"       # MongoDB
+    "which kafka"         # Kafka
+    "which etcd"          # etcd
+    "which elasticsearch" # Elasticsearch
+    "which consul"        # Consul
+    "which zookeeper"     # Zookeeper
+    "which influxd"       # InfluxDB
+    "which clickhouse"    # ClickHouse
+    "which couchdb"       # CouchDB
+    "which cassandra"     # Cassandra
+    "which scylladb"      # ScyllaDB
+    "which neo4j"         # Neo4j
+    "which arangod"       # ArangoDB
+    "which dgraph"        # Dgraph
+    "which rqlite"        # Rqlite
+    "which leveldb"       # LevelDB
+    "which rocksdb"       # RocksDB
+    "which vault"         # Vault
+    "which rabbitmqctl"   # RabbitMQ
+    "which redpanda"      # Redpanda
+    # Kubernetes
+    "which kubectl"       # kubectl
+    "which kubeadm"       # kubeadm
+    "which kubelet"       # kubelet
+    "which kube-proxy"    # kube-proxy
+    "which helm"          # Helm
+    "which minikube"      # Minikube
+    "which k3s"           # K3s
+    "which kind"          # Kind
+    "which crictl"        # crictl
+    "which ctr"           # ctr
+    "which nerdctl"       # nerdctl
+    "which oc"            # oc
+    "which istioctl"      # istioctl
   )
+  summary=""
+  for which in "${cmdline[@]}"; do
+    # Запоминаем результат выполнения команды
+    result=$(eval "$which")
+    # Проверяем, была ли команда найдена
+    if [ $? -eq 0 ]; then
+      # Если команда найдена, выводим ее путь
+      summary+="$which is installed at: $result"$'\n'
+    else
+      # Если команда не найдена, выводим сообщение
+      summary+="$which is not installed"$'\n'
+    fi
+  done
+  # Выводим список установленных программ
+  print_code "$summary"
+  
 
   #HOSTS
   print_msg "### /etc/hosts"
@@ -480,6 +554,8 @@ file_check() {
     "/usr/bin/curl"
     "/usr/bin/wget"
     "/root/.ssh/authorized_keys"
+    "/etc/hosts"
+    "/etc/resolv.conf"
   )
   for soft in "${cmdline[@]}"; do
     print_msg "File: $soft\t\t\tModification Date: $(stat $soft | grep -P -o '(?<=Modify: )[\d-\s:]+')"
