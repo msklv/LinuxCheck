@@ -28,10 +28,17 @@ webpath='/'
 ipaddress=$(ip address | grep -oP '(?<=inet )\d+\.\d+\.\d+\.\d+(?=\/2)' | head -n 1)
 filename=$ipaddress'_'$(hostname)'_'$(whoami)'_'$(date +%s)_log'.md'
 
+# Обычное сообщение
 print_msg() {
   echo -e "$1\n" | tee -a $filename
 }
 
+# Сжатое сообщение, без переноса строки
+print_msg_s() {
+  echo -e "$1" | tee -a $filename
+}
+
+# Блок кода
 print_code() {
   echo -e "\`\`\`shell\n$1\n\`\`\`\n" | tee -a $filename
 }
@@ -149,10 +156,11 @@ base_check() {
   print_msg "**IPADDR:**\t\t${ipaddress}" | sed ":a;N;s/\n/ /g;ta"
   print_msg "**CPU Usage:**  "
   awk '$0 ~/cpu[0-9]/' /proc/stat 2>/dev/null | while read line; do
-    print_msg "$(echo $line | awk '{total=$2+$3+$4+$5+$6+$7+$8;free=$5;\
+    print_msg_s "$(echo $line | awk '{total=$2+$3+$4+$5+$6+$7+$8;free=$5;\
         print$1" Free "free/total*100"%",\
         "Used " (total-free)/total*100"%"}')"
   done
+  print_msg ""
 
   # Использование памяти
   print_msg "### Memory Usage"
@@ -323,8 +331,9 @@ network_check() {
   print_msg "### Network Traffic"
   print_msg "**Interface**    **ByteRec**   **PackRec**   **ByteTran**   **PackTran**"
   awk ' NR>2' /proc/net/dev | while read line; do
-    print_msg "$line" | awk -F ':' '{print "  "$1"  " $2}' | awk '{print $1"   "$2 "    "$3"   "$10"  "$11}'
+    print_msg_s "$line" | awk -F ':' '{print "  "$1"  " $2}' | awk '{print $1"   "$2 "    "$3"   "$10"  "$11}'
   done
+  print_msg ""
 
   # Мониторинг портов
   print_msg "### Port Listening"
@@ -558,8 +567,9 @@ file_check() {
     "/etc/resolv.conf"
   )
   for soft in "${cmdline[@]}"; do
-    print_msg "File: $soft\t\t\tModification Date: $(stat $soft | grep -P -o '(?<=Modify: )[\d-\s:]+')"
+    print_msg_s "File: $soft\t\t\tModification Date: $(stat $soft | grep -P -o '(?<=Modify: )[\d-\s:]+')"
   done
+  print_msg ""
 
   print_msg "### Hidden Files"
   print_msg "$(find / ! -path "/proc/*" ! -path "/sys/*" ! -path "/run/*" ! -path "/boot/*" -name ".*.")"
