@@ -118,7 +118,7 @@
 Первый способ: установка через git clone
 
 ```bash
-git clone https://github.com/al0ne/LinuxCheck.git
+git clone https://github.com/msklv/LinuxCheck.git
 chmod u+x LinuxCheck.sh
 ./LinuxCheck.sh  
 ```
