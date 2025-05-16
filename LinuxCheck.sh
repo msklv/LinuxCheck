@@ -5,7 +5,7 @@ echo " ========================================================= "
 echo " \    Linux Emergency Response/Information Collection     / "
 echo " \        Vulnerability Detection Script V3.0             / "
 echo " ========================================================= "
-echo " # Supports CentOS, Debian, Alt and Astra Linux  system   "
+echo " # Supports RHEL, Debian, Alt and Astra Linux  system     "
 echo " # author: al0ne                                          "
 echo " # Original updated on: April 20, 2024                    "
 echo " # Adopted on: 3 May 2025 dy msklv                        " 
@@ -61,7 +61,7 @@ else
   print_msg "Currently running with root privileges!"
 fi
 
-# Проверка операционной системы: Debian или CentOS
+# Проверка операционной системы: Debian или RHEL
 OS='None'
 
 if [ -e "/etc/os-release" ]; then
@@ -74,7 +74,7 @@ if [ -e "/etc/os-release" ]; then
     OS='Alt'
     ;;  
   "centos" | "rhel fedora" | "rhel")
-    OS='Centos'
+    OS='RHEL'
     ;;
   *) ;;
   esac
@@ -84,7 +84,7 @@ if [ $OS = 'None' ]; then
   if command -v apt-get >/dev/null 2>&1; then
     OS='Debian'
   elif command -v yum >/dev/null 2>&1; then
-    OS='Centos'
+    OS='RHEL'
   else
     echo -e "\nThis system is not fully supported by this script!"
     OS='BaseLinux'
@@ -95,7 +95,7 @@ fi
 
 
 # Выводим тип ОС
-print_msg "Detected OS: $OS"
+print_msg "Detected OS Family: $OS"
 
 # Установка инструментов для анализа сети и отладки
 print_msg "Installing network analysis and debugging tools..."
@@ -105,7 +105,7 @@ cmdline=(
 )
 for prog in "${cmdline[@]}"; do
 
-  if [ $OS = 'Centos' ]; then
+  if [ $OS = 'RHEL' ]; then
     soft=$(rpm -q "$prog")
     if echo "$soft" | grep -E 'not installed|not found' >/dev/null 2>&1; then
       echo -e "$prog is being installed......"
@@ -136,19 +136,27 @@ base_check() {
   print_msg "## Basic Configuration Check"
   print_msg "### System Information"
   # Текущий пользователь
-  print_msg "**USER:**\t\t$(whoami)" 2>/dev/null
+  print_msg "* USER: \t\t$(whoami)" 2>/dev/null
   # Версия системы
-  print_msg "**OS Version:**\t$(uname -r)"
+  print_msg "* Core Version: \t$(uname -r)"
+  # Версия дистрибутива
+  if [ $OS = 'RHEL' ]; then
+    print_msg "* OS Version: \t$(cat /etc/redhat-release | grep -oP '(?<=release )\d+(\.\d+)?')"
+  else
+    print_msg "* OS Version: \t$(cat /etc/os-release | grep 'VERSION=' | cut -d '=' -f2 | tr -d '"')"
+  fi
+  # Дата установки
+  print_msg "* Install Date: \t$(ls -lct /var/log/installer | awk '{print $6,$7,$8}')"
   # Имя хоста
-  print_msg "**Hostname:** \t$(hostname -s)"
+  print_msg "* Hostname: \t$(hostname -s)"
   # Серийный номер сервера
-  print_msg "**Server SN:** \t$(dmidecode -t1 | grep -oP '(?<=Serial Number: ).*')"
+  print_msg "* Server SN: \t$(dmidecode -t1 | grep -oP '(?<=Serial Number: ).*')"
   #uptime
-  print_msg "**Uptime:** \t$(uptime | awk -F ',' '{print $1}')"
+  print_msg "* Uptime: \t$(uptime | awk -F ',' '{print $1}')"
   # Системная нагрузка
-  print_msg "**System Load:** \t$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')"
+  print_msg "* System Load: \t$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')"
   # Информация о CPU
-  print_msg "**CPU info:**\t$(grep -oP '(?<=model name\t: ).*' </proc/cpuinfo | head -n 1)"
+  print_msg "* CPU info: \t$(grep -oP '(?<=model name\t: ).*' </proc/cpuinfo | head -n 1)"
   # Количество ядер процессора
   print_msg "**CPU Cores:**\t$(cat /proc/cpuinfo | grep 'processor' | sort | uniq | wc -l)"
   #ipaddress
@@ -636,7 +644,7 @@ ssh_check() {
   print_msg "## SSH Check"
   #IP-адреса, осуществляющие brute-force SSH
   print_msg "### SSH Brute-force IPs"
-  if [ $OS = 'Centos' ]; then
+  if [ $OS = 'RHEL' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/secure* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
   elif [ $OS = 'Debian' ]; then
     print_code "$(grep -P -i -a 'authentication failure' /var/log/auth.* | awk '{print $14}' | awk -F '=' '{print $2}' | grep -P '\d+\.\d+\.\d+\.\d+' | sort | uniq -c | sort -nr | head -n 25)"
